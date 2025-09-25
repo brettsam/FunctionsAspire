@@ -1,51 +1,72 @@
-## Ignore Visual Studio temporary files, build results, and
-## user-specific files
 
-# Build results
+## Build artifacts
 bin/
 obj/
 out/
 
-# User-specific files
+## User-specific files
 *.user
 *.suo
 *.userosscache
 *.sln.docstates
 
-# ASP.NET Scaffolding
-ScaffoldingReadMe.txt
+## ASP.NET Core specific
+appsettings.Development.json
+appsettings.Local.json
+appsettings.*.json
+appsettings.json
+*.db
+*.db-shm
+*.db-wal
 
-# NuGet packages
-*.nupkg
-*.snupkg
-packages/
-*.nuspec
+## Entity Framework
+Migrations/
 
-# Project lock files
-project.lock.json
-project.fragment.lock.json
-
-# Visual Studio Code
-.vscode/
-
-# Rider
-.idea/
-
-# Dotnet CLI
-*.dotnet-cli-tool*
-
-# Logs
+## Logs
 *.log
+logs/
 
-# Entity Framework
-migrations/
-
-# Publish output
+## Publish output
 publish/
 wwwroot/
 
-# Others
-*.dbmdl
+## Visual Studio
+.vscode/
+.vs/
+*.csproj.user
+
+## Rider
+.idea/
+
+## NuGet
+*.nupkg
+*.snupkg
+packages/
+.nuget/
+
+## Dotnet CLI
+*.dotnet-cli-tool*
+
+## Test results
+TestResults/
+*.trx
+*.coverage
+*.coveragexml
+
+## Docker
+Dockerfile.*
+docker-compose.*
+*.env
+
+## Node.js (if using frontend)
+node_modules/
+npm-debug.log
+yarn-error.log
+
+## Azure Functions
+.local.settings.json
+
+## Others
 *.pdb
 *.cache
 *.vspscc
@@ -54,21 +75,3 @@ wwwroot/
 *.vsp
 *.vsix
 *.docstates
-
-# Azure Functions
-.local.settings.json
-
-# Docker
-Dockerfile.*
-docker-compose.*
-
-# Test results
-TestResults/
-*.trx
-*.coverage
-*.coveragexml
-
-# Node.js (if using frontend)
-node_modules/
-npm-debug.log
-yarn-error.log
