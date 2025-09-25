@@ -1,0 +1,74 @@
+## Ignore Visual Studio temporary files, build results, and
+## user-specific files
+
+# Build results
+bin/
+obj/
+out/
+
+# User-specific files
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# ASP.NET Scaffolding
+ScaffoldingReadMe.txt
+
+# NuGet packages
+*.nupkg
+*.snupkg
+packages/
+*.nuspec
+
+# Project lock files
+project.lock.json
+project.fragment.lock.json
+
+# Visual Studio Code
+.vscode/
+
+# Rider
+.idea/
+
+# Dotnet CLI
+*.dotnet-cli-tool*
+
+# Logs
+*.log
+
+# Entity Framework
+migrations/
+
+# Publish output
+publish/
+wwwroot/
+
+# Others
+*.dbmdl
+*.pdb
+*.cache
+*.vspscc
+*.vssscc
+*.psess
+*.vsp
+*.vsix
+*.docstates
+
+# Azure Functions
+.local.settings.json
+
+# Docker
+Dockerfile.*
+docker-compose.*
+
+# Test results
+TestResults/
+*.trx
+*.coverage
+*.coveragexml
+
+# Node.js (if using frontend)
+node_modules/
+npm-debug.log
+yarn-error.log
