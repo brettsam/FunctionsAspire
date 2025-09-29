@@ -6,17 +6,24 @@ namespace AspireApp18.AppHost;
 
 internal static class Extensions
 {
-    public static IResourceBuilder<T> PublishFunctionsProjectAsAzureContainerApp<T>(this IResourceBuilder<T> builder, IAzureKeyVaultSecretReference secret)
+    public static IResourceBuilder<T> PublishFunctionsProjectAsAzureContainerApp<T>(this IResourceBuilder<T> builder)
        where T : AzureFunctionsProjectResource
     {
-        builder.WithEnvironment("AzureWebJobsSecretStorageType", "ContainerApps");
+        if (!builder.ApplicationBuilder.ExecutionContext.IsPublishMode)
+        {
+            return builder;
+        }
 
+        var keyVault = builder.ApplicationBuilder.AddAzureKeyVault("key-vault");
+        var secret = Extensions.CreateSecretIfNotExists(builder.ApplicationBuilder, keyVault, "host-function-a");
+
+        builder.WithEnvironment("AzureWebJobsSecretStorageType", "ContainerApps");
         builder.PublishAsAzureContainerApp((infra, containerApp) => ConfigureFunctionsContainerApp(infra, containerApp, builder.Resource, secret));
 
         return builder;
     }
 
-    static void ConfigureFunctionsContainerApp(AzureResourceInfrastructure infrastructure, ContainerApp containerApp, IResource resource,
+    private static void ConfigureFunctionsContainerApp(AzureResourceInfrastructure infrastructure, ContainerApp containerApp, IResource resource,
         params IAzureKeyVaultSecretReference[] secrets)
     {
         const string volumeName = "functions-keys";
@@ -71,5 +78,42 @@ internal static class Extensions
         // TODO: will there always be 1 Container?
         containerApp.Template.Containers[0].Value!.VolumeMounts.Add(containerAppSecretsVolumeMount);
         containerApp.Template.Volumes.Add(containerAppSecretsVolume);
+    }
+
+
+    public static IAzureKeyVaultSecretReference CreateSecretIfNotExists(IDistributedApplicationBuilder builder, IResourceBuilder<AzureKeyVaultResource> keyVault, string secretName)
+    {
+        var secretParameter = ParameterResourceBuilderExtensions.CreateDefaultPasswordParameter(builder, $"param-{secretName}", special: false);
+
+        builder.AddBicepTemplateString($"key-vault-key-{secretName}", """
+                param location string = resourceGroup().location
+    
+                param keyVaultName string
+
+                param secretName string
+
+                @secure()
+                param secretValue string    
+
+                // Reference the existing Key Vault
+                resource keyVault 'Microsoft.KeyVault/vaults@2023-07-01' existing = {
+                  name: keyVaultName
+                }
+
+                // Deploy the secret only if it doesn’t already exist
+                @onlyIfNotExists()
+                resource newSecret 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = {
+                  parent: keyVault
+                  name: secretName
+                  properties: {
+                      value: secretValue
+                  }
+                }
+                """)
+            .WithParameter("keyVaultName", keyVault.GetOutput("name"))
+            .WithParameter("secretName", secretName)
+            .WithParameter("secretValue", secretParameter);
+
+        return keyVault.GetSecret(secretName);
     }
 }

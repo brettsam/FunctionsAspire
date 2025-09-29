@@ -15,18 +15,11 @@ var storage = builder.AddAzureStorage("storage")
     });
 // --- END: Added by me --- //
 
-var keyVault = builder.AddAzureKeyVault("key-vault");
-var secretParameter = ParameterResourceBuilderExtensions.CreateDefaultPasswordParameter(builder, "param-host-function-default", special: false);
-keyVault.AddSecret("host-function-default", secretParameter);
-
-var secret = keyVault.GetSecret("host-function-default");
-
 builder.AddAzureFunctionsProject<Projects.FunctionApp18>("functionapp18")
 // --- BEGIN:  Added by me --- //
        .WithHostStorage(storage)
-       .WithReference(keyVault)
        .WithExternalHttpEndpoints()
-       .PublishFunctionsProjectAsAzureContainerApp(secret);
+       .PublishFunctionsProjectAsAzureContainerApp();
 // --- END: Added by me --- //
 
 builder.Build().Run();
