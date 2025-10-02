@@ -1,12 +1,11 @@
 ﻿using Aspire.Hosting.Azure;
-using Azure.Provisioning;
 using Azure.Provisioning.AppContainers;
 
-namespace AspireApp18.AppHost;
+namespace Aspire.Hosting;
 
 internal static class Extensions
 {
-    public static IResourceBuilder<T> PublishFunctionsProjectAsAzureContainerApp<T>(this IResourceBuilder<T> builder)
+    public static IResourceBuilder<T> PublishWithContainerAppSecrets<T>(this IResourceBuilder<T> builder, params string[] additionalSecretsToCreate)
        where T : AzureFunctionsProjectResource
     {
         if (!builder.ApplicationBuilder.ExecutionContext.IsPublishMode)
@@ -14,13 +13,19 @@ internal static class Extensions
             return builder;
         }
 
-        var keyVault = builder.ApplicationBuilder.AddAzureKeyVault("key-vault");
-        var secret = Extensions.CreateSecretIfNotExists(builder.ApplicationBuilder, keyVault, "host-function-a");
-
         builder.WithEnvironment("AzureWebJobsSecretStorageType", "ContainerApps");
-        builder.PublishAsAzureContainerApp((infra, containerApp) => ConfigureFunctionsContainerApp(infra, containerApp, builder.Resource, secret));
 
-        return builder;
+        List<IAzureKeyVaultSecretReference> secrets = [];
+        IResourceBuilder<AzureKeyVaultResource>? keyVault = builder.ApplicationBuilder.AddAzureKeyVault("key-vault");
+
+        // Always create a default key        
+        foreach (string secretToCreate in additionalSecretsToCreate.Append("host-function-default"))
+        {
+            var secret = CreateSecretIfNotExists(builder.ApplicationBuilder, keyVault, secretToCreate);
+            secrets.Add(secret);
+        }
+
+        return builder.PublishAsAzureContainerApp((infra, app) => ConfigureFunctionsContainerApp(infra, app, builder.Resource, secrets.ToArray()));
     }
 
     private static void ConfigureFunctionsContainerApp(AzureResourceInfrastructure infrastructure, ContainerApp containerApp, IResource resource,
@@ -29,16 +34,8 @@ internal static class Extensions
         const string volumeName = "functions-keys";
         const string mountPath = "/run/secrets/functions-keys";
 
-        ProvisioningParameter containerAppIdentityId;
-        if (resource.TryGetLastAnnotation<AppIdentityAnnotation>(out var appIdentityAnnotation))
-        {
-            var appIdentityResource = appIdentityAnnotation.IdentityResource;
-            containerAppIdentityId = appIdentityResource.Id.AsProvisioningParameter(infrastructure);
-        }
-        else
-        {
-            throw new InvalidOperationException($"The resource {resource.Name} must have an AppIdentityAnnotation to use Key Vault secrets.");
-        }
+        var appIdentityAnnotation = resource.Annotations.OfType<AppIdentityAnnotation>().Last();
+        var containerAppIdentityId = appIdentityAnnotation.IdentityResource.Id.AsProvisioningParameter(infrastructure);
 
         var containerAppSecretsVolume = new ContainerAppVolume
         {
@@ -80,7 +77,6 @@ internal static class Extensions
         containerApp.Template.Volumes.Add(containerAppSecretsVolume);
     }
 
-
     public static IAzureKeyVaultSecretReference CreateSecretIfNotExists(IDistributedApplicationBuilder builder, IResourceBuilder<AzureKeyVaultResource> keyVault, string secretName)
     {
         var secretParameter = ParameterResourceBuilderExtensions.CreateDefaultPasswordParameter(builder, $"param-{secretName}", special: false);
@@ -100,7 +96,7 @@ internal static class Extensions
                   name: keyVaultName
                 }
 
-                // Deploy the secret only if it doesn’t already exist
+                // Deploy the secret only if it does not already exist
                 @onlyIfNotExists()
                 resource newSecret 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = {
                   parent: keyVault
