@@ -18,6 +18,8 @@ internal static class Extensions
         List<IAzureKeyVaultSecretReference> secrets = [];
         IResourceBuilder<AzureKeyVaultResource>? keyVault = builder.ApplicationBuilder.AddAzureKeyVault("key-vault");
 
+        builder.WithReference(keyVault);
+
         // Always create a default key        
         foreach (string secretToCreate in additionalSecretsToCreate.Append("host-function-default"))
         {
